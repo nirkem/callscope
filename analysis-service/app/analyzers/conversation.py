@@ -30,12 +30,12 @@ class ConversationAnalyzer:
         self.empathy = empathy
 
     def analyze(self, request: AnalyzeRequest) -> AnalyzeResponse:
-        customer = _turns_by(request.turns, Speaker.CUSTOMER)
-        agent = _turns_by(request.turns, Speaker.AGENT)
+        customer_turns = _turns_by(request.turns, Speaker.CUSTOMER)
+        agent_turns = _turns_by(request.turns, Speaker.AGENT)
 
         # One batched call per classifier, however long the conversation is.
-        sentiment_preds = self.sentiment.classify([text for _, text in customer])
-        empathy_preds = self.empathy.classify([text for _, text in agent])
+        sentiment_preds = self.sentiment.classify([text for _, text in customer_turns])
+        empathy_preds = self.empathy.classify([text for _, text in agent_turns])
 
         return AnalyzeResponse(
             conversation_id=request.conversation_id,
@@ -43,7 +43,7 @@ class ConversationAnalyzer:
                 sentiment=self.sentiment.model_version,
                 empathy=self.empathy.model_version,
             ),
-            turns=_turn_results(customer, sentiment_preds, agent, empathy_preds),
+            turns=_turn_results(customer_turns, sentiment_preds, agent_turns, empathy_preds),
             summary=_summary(sentiment_preds, empathy_preds),
         )
 
@@ -54,18 +54,18 @@ def _turns_by(turns: list[Turn], speaker: Speaker) -> list[IndexedText]:
 
 
 def _turn_results(
-    customer: list[IndexedText],
+    customer_turns: list[IndexedText],
     sentiment_preds: list[Prediction[SentimentLabel]],
-    agent: list[IndexedText],
+    agent_turns: list[IndexedText],
     empathy_preds: list[Prediction[EmpathyLabel]],
 ) -> list[TurnResult]:
     """One TurnResult per turn, back in the original order."""
     results = [
         TurnResult(index=index, speaker=Speaker.CUSTOMER, sentiment=p.label, confidence=p.confidence)
-        for (index, _), p in zip(customer, sentiment_preds)
+        for (index, _), p in zip(customer_turns, sentiment_preds)
     ] + [
         TurnResult(index=index, speaker=Speaker.AGENT, empathy=p.label, confidence=p.confidence)
-        for (index, _), p in zip(agent, empathy_preds)
+        for (index, _), p in zip(agent_turns, empathy_preds)
     ]
     return sorted(results, key=lambda r: r.index)
 
