@@ -1,0 +1,30 @@
+spring:
+  application:
+    name: conversation-service
+  cloud:
+    aws:
+      # Local queue (ElasticMQ): any region works and the keys are placeholders.
+      # Against real SQS, drop the endpoint and the keys; credentials come from the AWS environment.
+      region:
+        static: us-east-1
+      credentials:
+        access-key: local
+        secret-key: local
+      sqs:
+        endpoint: ${SQS_ENDPOINT:http://localhost:9324}
+
+server:
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+
+callscope:
+  queue-name: conversation-completed
+  analysis-service:
+    base-url: ${ANALYSIS_SERVICE_URL:http://localhost:8000}
+    connect-timeout: 2s
+    read-timeout: 10s
