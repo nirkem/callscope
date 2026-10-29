@@ -1,0 +1,21 @@
+{
+  "formId": "support_quality",
+  "version": 1,
+  "title": "Customer support quality",
+  "questions": [
+    {
+      "id": "q1",
+      "text": "Did the agent verify the customer's identity?",
+      "helpText": "YES if the agent asked for an account number, email or order ID before discussing the account. N/A if the conversation never touched account details.",
+      "answers": ["YES", "NO", "N/A"],
+      "weight": 2
+    },
+    {
+      "id": "q2",
+      "text": "Did the agent confirm the issue was resolved before ending the conversation?",
+      "helpText": "YES if the agent asked whether the issue was resolved or whether the customer needed anything else, in the last three agent turns.",
+      "answers": ["YES", "NO"],
+      "weight": 1
+    }
+  ]
+}

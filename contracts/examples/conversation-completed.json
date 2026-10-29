@@ -1,0 +1,9 @@
+{
+  "eventId": "e-1",
+  "conversationId": "c-123",
+  "completedAt": "2026-10-27T10:00:00Z",
+  "turns": [
+    { "speaker": "CUSTOMER", "text": "My order never arrived" },
+    { "speaker": "AGENT", "text": "I'm sorry about that, let me check right now" }
+  ]
+}

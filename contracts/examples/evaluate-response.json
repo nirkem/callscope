@@ -1,0 +1,21 @@
+{
+  "conversationId": "c-456",
+  "formId": "support_quality",
+  "formVersion": 1,
+  "modelVersion": "claude-haiku-5-5",
+  "answers": [
+    {
+      "questionId": "q1",
+      "answer": "YES",
+      "evidence": "Can you confirm the email on the account?",
+      "evidenceTurn": 2
+    },
+    {
+      "questionId": "q2",
+      "answer": "NO",
+      "evidence": null,
+      "evidenceTurn": null
+    }
+  ],
+  "score": 66.7
+}
