@@ -1,16 +1,36 @@
 """Entry point. uvicorn runs `app.main:app`: the variable `app` in this file."""
 
+import logging
+import os
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
+
 from app.analyzers.conversation import ConversationAnalyzer
 from app.analyzers.fakes import FakeEmpathyClassifier, FakeSentimentClassifier
 from app.api.routes import router
 
+logger = logging.getLogger("uvicorn.error")  # uvicorn's logger, so messages show in its output
+
 
 def build_analyzer() -> ConversationAnalyzer:
-    """The analyzer every request shares. Day 2: real models instead of the fakes."""
-    return ConversationAnalyzer(FakeSentimentClassifier(), FakeEmpathyClassifier())
+    """The analyzer every request shares. CALLSCOPE_MODELS picks the classifiers: "fake" (default) or "real"."""
+    models = os.environ.get("CALLSCOPE_MODELS", "fake")
+    if models == "real":
+        # Imported only here, so the fakes work without the ML libraries installed (tests, CI).
+        from app.analyzers.empathy import HuggingFaceEmpathyClassifier
+        from app.analyzers.sentiment import HuggingFaceSentimentClassifier
+
+        analyzer = ConversationAnalyzer(HuggingFaceSentimentClassifier(), HuggingFaceEmpathyClassifier())
+    elif models == "fake":
+        analyzer = ConversationAnalyzer(FakeSentimentClassifier(), FakeEmpathyClassifier())
+    else:
+        # Fail at startup, not on the first request: a typo should never silently mean "fake".
+        raise ValueError(f'CALLSCOPE_MODELS must be "fake" or "real", not {models!r}')
+
+    logger.info("Classifiers loaded: %s, %s", analyzer.sentiment.model_version, analyzer.empathy.model_version)
+    return analyzer
 
 
 @asynccontextmanager

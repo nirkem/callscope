@@ -13,11 +13,18 @@ services:
     build: ../analysis-service
     ports:
       - "8000:8000"
+    environment:
+      CALLSCOPE_MODELS: real  # "fake" starts instantly, with keyword classifiers
+    volumes:
+      - model-cache:/home/appuser/.cache/huggingface  # models survive restarts and rebuilds
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
       interval: 10s
       timeout: 3s
       retries: 5
-      start_period: 60s  # room for loading the real models
+      start_period: 10m  # the first start downloads ~2 GB of models; later starts take seconds
 
   # Day 3: conversation-service goes here.
+
+volumes:
+  model-cache:
