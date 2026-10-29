@@ -1,0 +1,23 @@
+# Run from this folder:  docker compose up --build
+name: callscope
+
+services:
+  sqs:
+    image: softwaremill/elasticmq-native:1.7.1
+    ports:
+      - "9324:9324"  # SQS API
+    volumes:
+      - ./elasticmq.conf:/opt/elasticmq.conf:ro
+
+  analysis-service:
+    build: ../analysis-service
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 60s  # room for loading the real models
+
+  # Day 3: conversation-service goes here.
