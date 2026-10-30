@@ -24,7 +24,19 @@ services:
       retries: 5
       start_period: 10m  # the first start downloads ~2 GB of models; later starts take seconds
 
-  # Day 3: conversation-service goes here.
+  conversation-service:
+    build: ../conversation-service
+    ports:
+      - "8080:8080"
+    environment:
+      # Inside Docker, the other containers are reached by their service names.
+      SQS_ENDPOINT: http://sqs:9324
+      ANALYSIS_SERVICE_URL: http://analysis-service:8000
+    depends_on:
+      sqs:
+        condition: service_started
+      analysis-service:
+        condition: service_healthy  # start consuming only once the models are loaded
 
 volumes:
   model-cache:
