@@ -7,10 +7,11 @@ from app.schemas import AnalyzeRequest, EmpathyLabel, SentimentLabel, Speaker
 
 
 def request(*turns: tuple[str, str]) -> AnalyzeRequest:
-    return AnalyzeRequest(
-        conversation_id="c-1",
-        turns=[{"speaker": speaker, "text": text} for speaker, text in turns],
-    )
+    # model_validate: built from raw data, the way a JSON body arrives.
+    return AnalyzeRequest.model_validate({
+        "conversationId": "c-1",
+        "turns": [{"speaker": speaker, "text": text} for speaker, text in turns],
+    })
 
 
 def test_results_come_back_in_the_original_order(analyzer):

@@ -1,0 +1,45 @@
+# Runs both services' checks on every push to main and on every pull request.
+# No Docker, queue or models: each service's tests replace its neighbours with fakes,
+# so CI takes about a minute and needs nothing but the code.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  analysis-service:
+    name: analysis-service (Python)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: analysis-service
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: analysis-service/pyproject.toml
+      # Only the dev extra, not "ml": no transformers or torch (several GB). The two real-model
+      # tests skip themselves, and the rest use the keyword fakes (CALLSCOPE_MODELS defaults to "fake").
+      - run: pip install -e ".[dev]"
+      - run: pytest -q
+      - run: mypy app tests
+
+  conversation-service:
+    name: conversation-service (Java)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: conversation-service
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      # The app-start test switches SQS off and mocks its client, so no queue is needed.
+      - run: ./mvnw -B test
