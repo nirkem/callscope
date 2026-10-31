@@ -41,13 +41,12 @@ public class ConversationEventListener {
 	 */
 	@SqsListener("${callscope.queue-name}")
 	public void onMessage(ConversationCompletedEvent event) {
-		// The annotations on the record do nothing on their own: they only take effect when checked here.
+		// Assert the annotations on the ConversationCompletedEvent record.
 		Set<ConstraintViolation<ConversationCompletedEvent>> violations = validator.validate(event);
 		if (!violations.isEmpty()) {
 			throw new ConstraintViolationException(violations);
 		}
 
-		// No try/catch: an exception from the processor is how this method tells SQS "retry".
 		processor.process(event);
 	}
 

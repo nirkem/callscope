@@ -1,5 +1,6 @@
 package com.callscope.domain;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -16,5 +17,11 @@ public interface ConversationStore {
 	 * the return type itself says "may be missing", so callers can't forget that case.
 	 */
 	Optional<ConversationRecord> find(String conversationId);
+
+	/**
+	 * Every record in the store, in no particular order. A snapshot: records saved after the call
+	 * don't show up in the returned list.
+	 */
+	List<ConversationRecord> findAll();
 
 }

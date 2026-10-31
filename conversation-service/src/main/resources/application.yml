@@ -24,6 +24,8 @@ management:
 
 callscope:
   queue-name: conversation-completed
+  # Only counted, for the dashboard. Which queue is whose dead-letter queue is set in infra/elasticmq.conf.
+  dead-letter-queue-name: conversation-completed-dlq
   analysis-service:
     base-url: ${ANALYSIS_SERVICE_URL:http://localhost:8000}
     connect-timeout: 2s

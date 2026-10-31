@@ -10,7 +10,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * instead of reading strings with @Value.
  */
 @ConfigurationProperties("callscope")
-public record CallscopeProperties(String queueName, AnalysisService analysisService) {
+public record CallscopeProperties(String queueName, String deadLetterQueueName, AnalysisService analysisService) {
 
 	public record AnalysisService(URI baseUrl, Duration connectTimeout, Duration readTimeout) {
 	}

@@ -1,5 +1,6 @@
 package com.callscope.api;
 
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -49,6 +50,24 @@ class ConversationControllerTests {
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.status").value("FAILED"))
 				.andExpect(jsonPath("$.error").value("Connection refused"));
+	}
+
+	@Test
+	void listReturnsEveryRecord() throws Exception {
+		store.save(ConversationRecord.pending("c-1"));
+		store.save(ConversationRecord.failed("c-2", "Connection refused"));
+
+		mvc.perform(get("/api/conversations"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.length()").value(2))
+				.andExpect(jsonPath("$[*].conversationId", containsInAnyOrder("c-1", "c-2")));
+	}
+
+	@Test
+	void emptyStoreListsAsEmptyArrayNot404() throws Exception {
+		mvc.perform(get("/api/conversations"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.length()").value(0));
 	}
 
 }
