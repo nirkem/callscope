@@ -4,6 +4,7 @@ import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.NestedExceptionUtils;
 import org.springframework.stereotype.Service;
 
 import com.callscope.client.AnalysisClient;
@@ -48,12 +49,25 @@ public class ConversationProcessor {
 			log.info("Analyzed {}", id);
 		}
 		catch (RuntimeException e) {
-			conversationStore.save(ConversationRecord.failed(id, e.getMessage()));
-			log.warn("Analysis of {} failed, SQS will retry: {}", id, e.getMessage());
+			String reason = rootCauseMessage(e);
+			conversationStore.save(ConversationRecord.failed(id, reason));
+			log.warn("Analysis of {} failed, SQS will retry: {}", id, reason);
 			// Rethrow so the listener doesn't confirm the message: SQS retries it, and after
 			// 3 failed tries moves it to the dead-letter queue. Swallowing it would lose it.
 			throw e;
 		}
+	}
+
+	/**
+	 * Why it failed, taken from the innermost exception. The outer ones are often wrappers whose
+	 * message hides the real problem: a read timeout arrives as "Error while extracting response ...
+	 * content type [application/octet-stream]", and only its innermost cause says
+	 * "SocketTimeoutException: Read timed out".
+	 */
+	private static String rootCauseMessage(Exception e) {
+		Throwable cause = NestedExceptionUtils.getMostSpecificCause(e);
+		String type = cause.getClass().getSimpleName();
+		return cause.getMessage() == null ? type : type + ": " + cause.getMessage();
 	}
 
 }

@@ -9,11 +9,13 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.net.SocketTimeoutException;
 import java.time.Instant;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.web.client.ResourceAccessException;
+import org.springframework.web.client.RestClientException;
 
 import com.callscope.client.AnalysisClient;
 import com.callscope.client.AnalyzeResponse;
@@ -61,6 +63,18 @@ class ConversationProcessorTests {
 		ConversationRecord record = store.find("c-1").orElseThrow();
 		assertThat(record.status()).isEqualTo(ConversationStatus.FAILED);
 		assertThat(record.error()).contains("Connection refused");
+	}
+
+	@Test
+	void failureStoresTheRootCauseNotTheWrapper() {
+		// The shape of a real read timeout: RestClient wraps the socket's exception in its own.
+		when(client.analyze(any())).thenThrow(new RestClientException(
+				"Error while extracting response for type [AnalyzeResponse] and content type [application/octet-stream]",
+				new SocketTimeoutException("Read timed out")));
+
+		assertThatThrownBy(() -> processor.process(EVENT)).isInstanceOf(RestClientException.class);
+
+		assertThat(store.find("c-1").orElseThrow().error()).isEqualTo("SocketTimeoutException: Read timed out");
 	}
 
 	@Test

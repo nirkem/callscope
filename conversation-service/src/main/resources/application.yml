@@ -12,6 +12,13 @@ spring:
         secret-key: local
       sqs:
         endpoint: ${SQS_ENDPOINT:http://localhost:9324}
+        listener:
+          # At most 4 conversations at a time (the default is 10). The models share the CPU, so the more run
+          # at once, the slower each one is. A burst of 20 on a laptop: 10 at once took ~4.4 s per conversation
+          # (and after a night idle, one passed the 10 s read timeout below); 4 at once took ~2.1 s each, and
+          # the whole burst ~25% longer. The rest wait in the queue, which is what the queue is for.
+          max-concurrent-messages: 4
+          max-messages-per-poll: 4
 
 server:
   port: 8080
@@ -29,4 +36,6 @@ callscope:
   analysis-service:
     base-url: ${ANALYSIS_SERVICE_URL:http://localhost:8000}
     connect-timeout: 2s
+    # Keep this well below the queue's visibility timeout (20 s, in infra/elasticmq.conf). Otherwise SQS
+    # hands the message to another worker while this one is still waiting for its answer.
     read-timeout: 10s
