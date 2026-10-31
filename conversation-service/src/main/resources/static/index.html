@@ -78,6 +78,15 @@
 		border: 1px solid var(--border); border-radius: 999px; background: var(--surface);
 		color: var(--ink-2); font-size: 13px; font-variant-numeric: tabular-nums;
 	}
+	.controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
+	.demo { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin: 0; color: var(--ink-2); font-size: 13px; }
+	.demo label { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; }
+	.demo button {
+		padding: 6px 14px; border: 1px solid var(--ink); border-radius: 999px;
+		background: var(--ink); color: var(--page); font: inherit; font-weight: 600; cursor: pointer;
+	}
+	.demo button:disabled { opacity: 0.5; cursor: default; }
+	.demo button:focus-visible { outline: 2px solid var(--ink-2); outline-offset: 2px; }
 	.live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
 	.live.ok .live-dot { background: var(--good); }
 	.live.down .live-dot { background: var(--critical); }
@@ -285,7 +294,14 @@
 			<h1>CallScope live view</h1>
 			<p class="sub">Conversations moving through the pipeline, and what the models said about them.</p>
 		</div>
-		<div class="live" id="live" role="status"><span class="live-dot"></span><span id="live-text">Connecting…</span></div>
+		<div class="controls">
+			<form class="demo" id="demo">
+				<label><input type="checkbox" id="opt-duplicate" checked> + a duplicate</label>
+				<label><input type="checkbox" id="opt-invalid" checked> + a broken event</label>
+				<button type="submit" id="simulate">Simulate a batch</button>
+			</form>
+			<div class="live" id="live" role="status"><span class="live-dot"></span><span id="live-text">Connecting…</span></div>
+		</div>
 	</header>
 
 	<section class="flow" aria-label="The pipeline">
@@ -381,8 +397,8 @@
 	</div>
 
 	<footer>
-		Click a conversation to see each turn. Send more from the callscope folder:
-		<code>python simulator/publish_events.py --count 10 --invalid</code>.
+		Click a conversation to see each turn. Send traffic with the button at the top, or from the callscope
+		folder: <code>python simulator/publish_events.py --count 10 --invalid</code>.
 		Refreshes twice a second from <code>GET /api/queues</code> and <code>GET /api/conversations</code>.
 	</footer>
 </main>
@@ -818,6 +834,34 @@ function travel(arrowId, count, delay, backwards = false) {
 		motion.onfinish = () => dot.remove();
 	}
 }
+
+// "Simulate a batch": conversation-service sends 10 conversations to the queue, and they flow
+// through the pipeline like any others.
+$('demo').addEventListener('submit', async (event) => {
+	event.preventDefault();
+	const button = $('simulate');
+	button.disabled = true;
+	const params = new URLSearchParams({ count: '10', duplicate: $('opt-duplicate').checked, invalid: $('opt-invalid').checked });
+	try {
+		const response = await fetch('/api/demo/batch?' + params, { method: 'POST' });
+		if (response.ok) {
+			const body = await response.json();
+			feed('neutral', `You sent ${plural(body.sent, 'message')} to the queue.`, '▶');
+		}
+		else if (response.status === 404) {
+			feed('critical', 'The button is switched off: start conversation-service with CALLSCOPE_DEMO_ENABLED=true.', '!');
+		}
+		else {
+			feed('critical', `Couldn't send the batch (HTTP ${response.status}).`, '!');
+		}
+	}
+	catch {
+		feed('critical', "Couldn't reach conversation-service to send the batch.", '!');
+	}
+	finally {
+		setTimeout(() => { button.disabled = false; }, 1000);
+	}
+});
 
 // One shared tooltip for everything with a data-tip attribute (turn dots, column headers, errors).
 const tip = $('tip');

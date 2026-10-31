@@ -32,6 +32,7 @@ services:
       # Inside Docker, the other containers are reached by their service names.
       SQS_ENDPOINT: http://sqs:9324
       ANALYSIS_SERVICE_URL: http://analysis-service:8000
+      CALLSCOPE_DEMO_ENABLED: "true"  # the dashboard's "Simulate a batch" button
     depends_on:
       sqs:
         condition: service_started

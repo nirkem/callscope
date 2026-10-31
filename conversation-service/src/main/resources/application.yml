@@ -1,6 +1,14 @@
 spring:
   application:
     name: conversation-service
+  web:
+    resources:
+      # The dashboard page must never be cached: every file in the jar is dated 1980 (reproducible
+      # builds), so a browser would keep its old copy for years and never see a new version.
+      cache:
+        use-last-modified: false
+        cachecontrol:
+          no-store: true
   cloud:
     aws:
       # Local queue (ElasticMQ): any region works and the keys are placeholders.
@@ -33,6 +41,10 @@ callscope:
   queue-name: conversation-completed
   # Only counted, for the dashboard. Which queue is whose dead-letter queue is set in infra/elasticmq.conf.
   dead-letter-queue-name: conversation-completed-dlq
+  # POST /api/demo/batch, behind the dashboard's "Simulate a batch" button. Demo only: off by default,
+  # turned on in infra/docker-compose.yml.
+  demo:
+    enabled: false
   analysis-service:
     base-url: ${ANALYSIS_SERVICE_URL:http://localhost:8000}
     connect-timeout: 2s
